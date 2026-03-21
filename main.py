@@ -1,3 +1,5 @@
+import math
+
 class Matrix:
 
     m: int
@@ -69,16 +71,16 @@ class Matrix:
     def __add__(self, other: type["Matrix"]):
         return self.add(self, other)
     
-    def __sub__(self, other):
+    def __sub__(self, other: type["Matrix"]):
         return self.add(self, -1*other)
-
+    
     # scalar mutliplication
     @classmethod
     def scalar_mul(cls, m: type["Matrix"], c: float):
         if isinstance(m, Matrix) and isinstance(c, (int, float)):
             return cls(m=m.m, n=m.n, content=[c*a for a in m.content])
         else:
-            raise TypeError("can only multiply matrix with int or float.")
+            raise TypeError("can only multiply matrix by int or float.")
         
     def __rmul__(self, other: float):
         return self.scalar_mul(self, other)
@@ -107,7 +109,21 @@ class Matrix:
             # matrix multiplication
             return self.multiply(self, other)
         # else
-        raise TypeError(f"cannot multiply type {type(other)} with matrix.")
+        raise TypeError(f"cannot multiply matrix by type {type(other)}.")
+
+    def __truediv__(self, other: float):
+        if isinstance(other, (int, float)):
+            return self.scalar_mul(self, 1/other)
+        # else
+        raise TypeError(f"cannot divide matrix by type {type(other)}.")
+
+    def __floordiv__(self, other: float):
+        if isinstance(other, (int, float)):
+            m = self.scalar_mul(self, 1/other)
+            m.content = [math.floor(val) for val in m.content]
+            return m
+        # else
+        raise TypeError(f"cannot divide matrix by type {type(other)}.")
 
     # matrix equality
     @staticmethod
@@ -155,4 +171,4 @@ class Matrix:
             content_format += str(self.content[i:i+self.n])
             # content_format += str(self.content[i:i+self.n])[1:-1].replace(",", "")
             i += self.n
-        return f"{self.m} {self.n}{content_format}"
+        return f"Matrix({self.m}x{self.n}{content_format})"
