@@ -1,3 +1,5 @@
+import array
+
 def err():
     print("ERROR")
     exit(1)
@@ -135,6 +137,37 @@ class Matrix:
     def __eq__(self, other: type["Matrix"]):
         if type(other) != Matrix: err()
         return self.is_equal(self, other)
+    
+    # in-place row swap
+    def row_swap(self, r1: int, r2: int):
+        if type(r1) != int or not (0 <= r1 < self.m): err()
+        if type(r2) != int or not (0 <= r2 < self.m): err()
+        k1 = r1*self.n
+        row1 = self.content[k1:k1+self.n]
+        k2 = r2*self.n
+        row2 = self.content[k2:k2+self.n]
+        row1, row2 = row2, row1
+        
+    # in-place row multiplication
+    def row_mul(self, r: int, c: float):
+        if type(r) != int or not (0 <= r < self.m): err()
+        if type(c) not in (int, float): err()
+        k = r*self.n
+        row = self.content[k:k+self.n]
+        row = [val * c for val in row]
+        self.content[k:k+self.n] = row
+        
+    # in-place row addition
+    def row_add(self, r1: int, r2: int, c: float):
+        if type(r1) != int or not (0 <= r1 < self.m): err()
+        if type(r2) != int or not (0 <= r2 < self.m): err()
+        if type(c) not in (int, float): err()
+        k1 = r1*self.n
+        row1 = self.content[k1:k1+self.n]
+        k2 = r2*self.n
+        row2 = self.content[k2:k2+self.n]
+        row1 = [val1+val2*c for val1, val2 in zip(row1, row2)]
+        self.content[k1:k1+self.n] = row1
 
     def __repr__(self):
         content_format = ""
@@ -145,3 +178,4 @@ class Matrix:
             # content_format += str(self.content[i:i+self.n])[1:-1].replace(",", "")
             i += self.n
         return f"{self.m} {self.n}{content_format}"
+
