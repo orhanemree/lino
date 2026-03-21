@@ -68,6 +68,9 @@ class Matrix:
 
     def __add__(self, other: type["Matrix"]):
         return self.add(self, other)
+    
+    def __sub__(self, other):
+        return self.add(self, -1*other)
 
     # scalar mutliplication
     @classmethod
