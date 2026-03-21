@@ -120,10 +120,9 @@ class Matrix:
         if not (0 <= r1 < self.m and 0 <= r2 < self.m):
             raise IndexError(f"rows {r1} and {r2} are out of matrix row range {self.m}.")
         k1 = r1*self.n
-        row1 = self.content[k1:k1+self.n]
         k2 = r2*self.n
-        row2 = self.content[k2:k2+self.n]
-        row1, row2 = row2, row1
+        (self.content[k1:k1+self.n], self.content[k2:k2+self.n]) = (
+            self.content[k2:k2+self.n], self.content[k1:k1+self.n])
         
     # in-place row multiplication
     def row_mul(self, r: int, c: float):
