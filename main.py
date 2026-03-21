@@ -134,8 +134,8 @@ class Matrix:
     # matrix equality
     @staticmethod
     def is_equal(m1: type["Matrix"], m2: type["Matrix"]):
-        return type(m1) == type(m2) and m1.m == m2.m and (
-            m1.n == m2.n and m1.content == m2.content)
+        return isinstance(m1, Matrix) and isinstance(m2, Matrix) and (
+            m1.m == m2.m and m1.n == m2.n and m1.content == m2.content)
 
     def __eq__(self, other: type["Matrix"]):
         return self.is_equal(self, other)
