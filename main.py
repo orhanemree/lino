@@ -1,4 +1,5 @@
 import math
+import copy
 
 class Matrix:
 
@@ -38,6 +39,11 @@ class Matrix:
         for i in range(n):
             content[i*(n+1)] = 1
         return cls(m=n, n=n, content=content)
+    
+    @classmethod
+    def zero(cls, m: int, n: int=-1):
+        if n == -1: n = m
+        return cls(m=m, n=n, content=[0]*m*n)
         
     @classmethod
     def from_file(cls, source: str):
@@ -162,6 +168,64 @@ class Matrix:
         row2 = self.content[k2:k2+self.n]
         row1 = [val1+val2*c for val1, val2 in zip(row1, row2)]
         self.content[k1:k1+self.n] = row1
+
+    def reduced_row_echelon_form(self):
+        matrix = copy.copy(self)
+        # 1. check if equals zero matrix
+        if matrix == Matrix.zero(matrix.m, matrix.n):
+            return matrix
+        # 2. determine leftmost nonzero column
+        depth = 0
+        leading_ones: list[tuple[int, int]] = []
+        while depth < matrix.m:
+            i = depth # row index
+            j = depth # col index
+            e = -1 # current entry
+            while i < matrix.m and j < matrix.n:
+                e = matrix.get_entry(i, j)
+                if e != 0:
+                    break
+                else:
+                    if i == matrix.m-1:
+                        i = depth
+                        j += 1
+                    else:
+                        i += 1
+            # 5. return if no more nonzero column
+            if e == 0:
+                break
+            # jth column is the leftmost nonzero column now
+            # 3. put one to the topmost position of this col
+            matrix.row_swap(depth, i)
+            matrix.row_mul(depth, 1/e)
+            # (depth, j) is pivot now
+            leading_ones.append((depth, j))
+            # 4. put zeros below the pivot
+            for r in range(1+depth, matrix.m):
+                # for each row
+                re = matrix.get_entry(r, j) # row leftmost
+                rm = -1*re # multiplier to make re zero
+                matrix.row_add(r, depth, rm)
+
+            # 6. repeat for submatrix
+            depth += 1
+
+        # 7. matrix is in row-echelon form now
+        # 8. we have determined all leading ones
+        leading_ones = leading_ones[::-1]
+        # 9. determine rightmost leading one
+        # 11. repeat for submatrix
+        for k in range(len(leading_ones)):
+            one = leading_ones[k]
+            # 10. delete entries in column above leading one
+            # 12. repeat for submatrix
+            for r in range(one[0]):
+                # for each row
+                re = matrix.get_entry(r, one[1]) # entry above
+                rm = -1*re # multiplier to make re zero
+                matrix.row_add(r, one[0], rm)
+        # 13. matrix is in reduced row-echelon form now
+        return matrix
 
     def __repr__(self):
         content_format = ""
