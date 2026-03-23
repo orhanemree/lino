@@ -1,29 +1,22 @@
-import math
+import typing
 import copy
-
+import math
 class Matrix:
 
-    m: int
-    n: int
-    size: tuple[int, int]
-    content: list[int]
-
-    def __init__(self, m: int, n: int, content: list[int]):
-
+    def __init__(self, m: int, n: int, content: typing.List[int]):
         if m*n != len(content):
             raise ValueError("matrix size and content length must match.")
-        
         self.m = m
         self.n = n
         self.size = (m, n)
-        self.content = content
+        self.content = content.copy()
 
     def get_row(self, i: int):
         if not (0 <= i < self.m):
             raise IndexError(f"row {i} is out of matrix range {self.m}.")
-        return self.content[i*self.n:i*self.n+self.n]
+        return self.content[i*self.n:(i+1)*self.n]
 
-    def get_col(self, j: int):
+    def get_column(self, j: int):
         if not (0 <= j < self.n):
             raise IndexError(f"column {j} is out of matrix range {self.n}.")
         return [self.content[k*self.n+j] for k in range(self.m)]
@@ -35,15 +28,15 @@ class Matrix:
     
     @classmethod
     def identity(cls, n: int):
-        content = [0]*n*n
+        content = [0]*(n*n)
         for i in range(n):
             content[i*(n+1)] = 1
         return cls(m=n, n=n, content=content)
     
     @classmethod
-    def zero(cls, m: int, n: int=-1):
-        if n == -1: n = m
-        return cls(m=m, n=n, content=[0]*m*n)
+    def zero(cls, m: int, n: int=None):
+        if n == None: n = m
+        return cls(m=m, n=n, content=[0]*(m*n))
         
     @classmethod
     def from_file(cls, source: str):
@@ -51,7 +44,7 @@ class Matrix:
             m = n = -1
             content = []
             for l in f.readlines():
-                if l.isspace(): continue # ignore prior whitespace
+                if l.strip() == "": continue # ignore prior whitespace
                 if m == -1:
                     size = l.strip().split(" ") # parse size
                     if len(size) != 2:
@@ -59,14 +52,14 @@ class Matrix:
                     m = int(size[0])
                     n = int(size[1])
                 else:
-                    content += [int(e) for e in l.strip().split(" ")] # parse matrix entries
+                    content += [float(e) for e in l.strip().split(" ")] # parse matrix entries
             if m*n != len(content):
                 raise ValueError("matrix size and content length must match.")
             return cls(m=m, n=n, content=content)
         
     # matrix addition
     @classmethod
-    def add(cls, m1: type["Matrix"], m2: type["Matrix"]):
+    def add(cls, m1: "Matrix", m2: "Matrix"):
         if isinstance(m1, Matrix) and isinstance(m2, Matrix):
             if m1.m != m2.m or m1.n != m2.n:
                 raise ValueError("matrix sizes must match.")
@@ -74,15 +67,15 @@ class Matrix:
         else:
             raise TypeError("can only add matrix to matrix.")
 
-    def __add__(self, other: type["Matrix"]):
+    def __add__(self, other: "Matrix"):
         return self.add(self, other)
     
-    def __sub__(self, other: type["Matrix"]):
+    def __sub__(self, other: "Matrix"):
         return self.add(self, -1*other)
     
     # scalar mutliplication
     @classmethod
-    def scalar_mul(cls, m: type["Matrix"], c: float):
+    def scalar_mul(cls, m: "Matrix", c: float):
         if isinstance(m, Matrix) and isinstance(c, (int, float)):
             return cls(m=m.m, n=m.n, content=[c*a for a in m.content])
         else:
@@ -93,21 +86,21 @@ class Matrix:
 
     # matrix multiplication
     @classmethod
-    def multiply(cls, m1: type["Matrix"], m2: type["Matrix"]):
+    def multiply(cls, m1: "Matrix", m2: "Matrix"):
         if isinstance(m1, Matrix) and isinstance(m2, Matrix):
             if m1.n != m2.m:
                 raise ValueError("matrix_1 column size and matrix_2 row size must match.")
             product_content = []
             for i in range(m1.m*m2.n):
-                ai=m1.get_row(i//m1.m)
-                bj=m2.get_col(i%m2.n)
+                ai=m1.get_row(i//m2.n)
+                bj=m2.get_column(i%m2.n)
                 product = sum([a*b for a, b in zip(ai, bj)])
                 product_content.append(product)
             return cls(m=m1.m, n=m2.n, content=product_content)
         else:
             raise TypeError("can only multiply matrix by matrix.")
 
-    def __mul__(self, other: float|type["Matrix"]):
+    def __mul__(self, other: typing.Union[float, "Matrix"]):
         if isinstance(other, (int, float)):
             # scalar multiplication
             return self.scalar_mul(self, other)
@@ -133,11 +126,11 @@ class Matrix:
 
     # matrix equality
     @staticmethod
-    def is_equal(m1: type["Matrix"], m2: type["Matrix"]):
+    def is_equal(m1: "Matrix", m2: "Matrix"):
         return isinstance(m1, Matrix) and isinstance(m2, Matrix) and (
             m1.m == m2.m and m1.n == m2.n and m1.content == m2.content)
 
-    def __eq__(self, other: type["Matrix"]):
+    def __eq__(self, other: "Matrix"):
         return self.is_equal(self, other)
     
     # in-place row swap
@@ -170,7 +163,7 @@ class Matrix:
         self.content[k1:k1+self.n] = row1
 
     def reduced_row_echelon_form(self):
-        matrix = copy.copy(self)
+        matrix = copy.deepcopy(self)
         # 1. check if equals zero matrix
         if matrix == Matrix.zero(matrix.m, matrix.n):
             return matrix
@@ -196,7 +189,8 @@ class Matrix:
                 break
             # jth column is the leftmost nonzero column now
             # 3. put one to the topmost position of this col
-            matrix.row_swap(depth, i)
+            if not depth == i:
+                matrix.row_swap(depth, i)
             matrix.row_mul(depth, 1/e)
             # (depth, j) is pivot now
             leading_ones.append((depth, j))
@@ -206,10 +200,8 @@ class Matrix:
                 re = matrix.get_entry(r, j) # row leftmost
                 rm = -1*re # multiplier to make re zero
                 matrix.row_add(r, depth, rm)
-
             # 6. repeat for submatrix
             depth += 1
-
         # 7. matrix is in row-echelon form now
         # 8. we have determined all leading ones
         leading_ones = leading_ones[::-1]
